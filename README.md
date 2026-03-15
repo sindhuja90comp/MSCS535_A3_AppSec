@@ -12,7 +12,7 @@ The purpose of this assignment is to demonstrate how security can be enforced at
 - practical web application protections through a Java servlet filter
 - a cryptography example using the One-Time Pad technique
 
-## Project Files
+## Project Files 
 
 ### `SecurityFilter.java`
 
