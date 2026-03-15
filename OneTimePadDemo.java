@@ -2,15 +2,19 @@ import java.security.SecureRandom;
 
 public class OneTimePadDemo {
 
+    // These are the only characters this demo uses.
     private static final String ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";
 
     public static void main(String[] args) {
+        // This is the message we want to protect.
         String plaintext = "MY NAME IS UNKNOWN";
 
+        // Make a random key, lock the message, then unlock it again.
         String key = generateRandomKey(plaintext.length());
         String ciphertext = encrypt(plaintext, key);
         String decrypted = decrypt(ciphertext, key);
 
+        // Show each step so the result is easy to follow.
         System.out.println("Plaintext : " + plaintext);
         System.out.println("Key       : " + key);
         System.out.println("Ciphertext: " + ciphertext);
@@ -21,6 +25,7 @@ public class OneTimePadDemo {
         SecureRandom random = new SecureRandom();
         StringBuilder key = new StringBuilder();
 
+        // Pick random letters to build a key the same size as the message.
         for (int i = 0; i < length; i++) {
             int index = random.nextInt(ALPHABET.length());
             key.append(ALPHABET.charAt(index));
@@ -36,6 +41,7 @@ public class OneTimePadDemo {
         StringBuilder ciphertext = new StringBuilder();
 
         for (int i = 0; i < plaintext.length(); i++) {
+            // Match each message letter with the key letter in the same spot.
             int p = ALPHABET.indexOf(plaintext.charAt(i));
             int k = ALPHABET.indexOf(key.charAt(i));
             int c = (p + k) % ALPHABET.length();
@@ -53,6 +59,7 @@ public class OneTimePadDemo {
         StringBuilder plaintext = new StringBuilder();
 
         for (int i = 0; i < ciphertext.length(); i++) {
+            // Use the same key to turn the secret text back into the original message.
             int c = ALPHABET.indexOf(ciphertext.charAt(i));
             int k = ALPHABET.indexOf(key.charAt(i));
             int p = (c - k + ALPHABET.length()) % ALPHABET.length();

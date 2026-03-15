@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 
 public class SecurityFilter implements Filter {
 
+    // These are the safety limits used by the filter.
     private static final int MAX_REQUEST_SIZE = 8 * 1024;
     private static final int MAX_REQUESTS_PER_MINUTE = 60;
     private static final Pattern SAFE_INPUT = Pattern.compile("^[a-zA-Z0-9 .,@_-]*$");
@@ -22,29 +23,35 @@ public class SecurityFilter implements Filter {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
 
+        // Add browser safety rules to every response.
         addSecurityHeaders(res);
 
+        // Only allow basic request types.
         if (!isAllowedMethod(req)) {
             res.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "HTTP method not allowed");
             return;
         }
 
+        // Stop very large requests.
         if (req.getContentLengthLong() > MAX_REQUEST_SIZE) {
             res.sendError(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE, "Request too large");
             return;
         }
 
         String clientIp = getClientIp(req);
+        // Stop one user from sending too many requests too fast.
         if (!checkRateLimit(clientIp)) {
             res.sendError(HttpServletResponse.SC_TOO_MANY_REQUESTS, "Rate limit exceeded");
             return;
         }
 
+        // Check that the user input looks safe.
         if (!validateParameters(req)) {
             res.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid input");
             return;
         }
 
+        // Let the request continue if all checks pass.
         chain.doFilter(request, response);
     }
 
@@ -64,6 +71,7 @@ public class SecurityFilter implements Filter {
     }
 
     private boolean validateParameters(HttpServletRequest req) {
+        // Look at each input value sent by the user.
         for (Map.Entry<String, String[]> entry : req.getParameterMap().entrySet()) {
             for (String value : entry.getValue()) {
                 if (value == null || value.length() > 256 || !SAFE_INPUT.matcher(value).matches()) {
@@ -79,6 +87,7 @@ public class SecurityFilter implements Filter {
         ClientWindow window = rateLimitMap.computeIfAbsent(clientIp, ip -> new ClientWindow(now));
 
         synchronized (window) {
+            // Start a new one-minute count when the old one ends.
             if (now - window.windowStart > 60_000) {
                 window.windowStart = now;
                 window.counter.set(0);
@@ -88,6 +97,7 @@ public class SecurityFilter implements Filter {
     }
 
     private String getClientIp(HttpServletRequest req) {
+        // Use the real visitor IP when the app sits behind another server.
         String forwarded = req.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
             return forwarded.split(",")[0].trim();
